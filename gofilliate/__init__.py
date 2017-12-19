@@ -18,20 +18,21 @@ class Gofilliate(object):
     def __init__(self
                  , username: str
                  , password: str
-                 , host=None, port=None
-                 , retries=3
-                 , timeout=10) -> None:
-        self.username = username
-        self.password = password
-        self.host = host
-        self.port = port or 443
-        self.retries = retries
-        self.timeout = timeout
-        self.auth_token = None
+                 , host: str
+                 , port: int=None
+                 , retries: int=3
+                 , timeout: int=10) -> None:
+        self.username = username  # type: str
+        self.password = password  # type: str
+        self.host = host  # type: str
+        self.port = port or 443  # type: int
+        self.retries = retries  # type: int
+        self.timeout = timeout  # type: int
+        self.auth_token = None  # type: str
 
-        self.base_url = None
-        self.setup_base_url()
-        self.session = Session()
+        self.base_url = None  # type: int
+        self.setup_base_url()  # type: str
+        self.session = Session()  # type: Session
 
         self.session.headers.update({'Accept': 'application/json'})
         self.logger = logging.getLogger('gofilliate')
@@ -49,7 +50,7 @@ class Gofilliate(object):
 
         self.base_url = template.format(
             host=self.host.strip('/'),
-            port=self.port)
+            port=self.port)  # type: str
 
     @property
     def get_login_query_string(self) -> str:
@@ -61,7 +62,7 @@ class Gofilliate(object):
         """Generates the decode API path"""
         return '{base}/admin/reports/token-analysis'.format(base=self.base_url)
 
-    def send_request(self, method:str, url:str, data:dict) -> dict:
+    def send_request(self, method: str, url: str, data: dict) -> dict:
         """Dispatches the request and returns a response"""
 
         try:
@@ -86,11 +87,11 @@ class Gofilliate(object):
 
     def authenticate(self):
         """Identify a single customer by their unique id, and optionally add attributes"""
-        url = self.get_login_query_string
+        url = self.get_login_query_string  # type: str
         post_data = dict(username=self.username, password=self.password)
         response = self.send_request('POST', url, post_data)
         try:
-            self.auth_token = response.get('bearer_token', None)
+            self.auth_token = response.get('bearer_token', None)  # type: str
             self.session.headers["Authorization"] = self.auth_token
             self.logger.warning('Authorized successfully, received token {}'.format(self.auth_token))
         except Exception:

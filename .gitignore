@@ -156,3 +156,4 @@ crashlytics-build.properties
 fabric.properties
 .idea/
 gofilliate/__pycache__/
+test.py
