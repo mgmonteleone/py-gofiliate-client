@@ -23,7 +23,7 @@ class Gofilliate(object):
                  , timeout=10) -> None:
         self.username = username
         self.password = password
-        self.host = host or 'aff-api.fairplaycasino.com'
+        self.host = host
         self.port = port or 443
         self.retries = retries
         self.timeout = timeout
