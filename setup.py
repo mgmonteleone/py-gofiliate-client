@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-VERSION = (1, 0, 3, 'final', 0)
+VERSION = (1, 0, 4, 'final', 0)
 
 
 def get_version():
@@ -22,7 +22,7 @@ setup(
     author_email="mgm@igpte.ch",
     license="BSD",
     description="gofilliate Python bindings.",
-    url="https://github.com/igp-tech/py-gofilliate-client",
+    url="https://github.com/mgmonteleone/py-gofilliate-client",
     packages=find_packages(),
     classifiers=[
         'Environment :: Web Environment',
