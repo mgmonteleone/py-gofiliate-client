@@ -106,6 +106,6 @@ class Gofilliate(object):
             return_data = AffiliateData(response.get('stats'))
         except Exception as e:
             self.logger.error(e)
-            self.logger.error('Could not deconds the sent token: {}'.format(token_str))
+            self.logger.error('Could not decode the sent token: {}'.format(token_str))
             raise GofilliateException('Could not decode the sent token. {}'.format(token_str))
         return return_data
