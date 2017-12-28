@@ -94,7 +94,7 @@ def test_initiate_login_fail():
         responses.add(responses.POST, 'https://{}/admin/login'.format(URL),
                       json=LOGIN_FAIL_DATA, status=200)
 
-        session: gofilliate.Gofilliate = gofilliate.Gofilliate(username=LOGIN, password=PASSWORD + "1", host=URL)
+        session = gofilliate.Gofilliate(username=LOGIN, password=PASSWORD + "1", host=URL)
         pprint(session.__dict__)
 
 @responses.activate
@@ -105,5 +105,5 @@ def test_decoded_failure():
         responses.add(responses.POST, 'https://{}/admin/reports/token-analysis'.format(URL),
                       json=DECODE_FAIL_DATA, status=200)
 
-        session: gofilliate.Gofilliate = gofilliate.Gofilliate(username=LOGIN, password=PASSWORD, host=URL)
+        session = gofilliate.Gofilliate(username=LOGIN, password=PASSWORD, host=URL)
         output = session.decode_token(TOKEN)
