@@ -4,8 +4,8 @@ import logging
 
 class GofilliateException(Exception):
     pass
-
-
+class GofilliateAuthException(GofilliateException):
+    pass
 class AffiliateData(object):
     def __init__(self, stats_dict: dict) -> None:
         self.email = stats_dict.get('email', None)
@@ -14,7 +14,6 @@ class AffiliateData(object):
 
 
 class Gofilliate(object):
-
     def __init__(self
                  , username: str
                  , password: str
@@ -71,10 +70,9 @@ class Gofilliate(object):
             # Raise exception alerting user that the system might be
             # experiencing an outage and refer them to system status page.
             message = '''Failed to receive valid reponse after {count} retries.
-                Check system status at http://status.customer.io.
                 Last caught exception -- {klass}: {message}
             '''.format(klass=type(e), message=e, count=self.retries)
-            raise GofilliateException(message)
+            raise GofilliateAuthException(message)
 
         result_status = response.status_code
         if result_status != 200:
@@ -82,21 +80,21 @@ class Gofilliate(object):
         elif result_status == 200:
             if response.json().get('code', None) == 'FAILURE_CREDENTIAL_INVALID':
                 message = 'Authentication Failed!'
-                raise GofilliateException(message)
+                raise GofilliateAuthException(message)
         return response.json()
 
     def authenticate(self):
-        """Identify a single customer by their unique id, and optionally add attributes"""
+        """Authenticate to the API"""
         url = self.get_login_query_string  # type: str
         post_data = dict(username=self.username, password=self.password)
         response = self.send_request('POST', url, post_data)
         try:
             self.auth_token = response.get('bearer_token', None)  # type: str
             self.session.headers["Authorization"] = self.auth_token
-            self.logger.warning('Authorized successfully, received token {}'.format(self.auth_token))
+            self.logger.info('Authorized successfully, received token {}'.format(self.auth_token))
         except Exception:
             message = 'Problem getting auth'
-            raise GofilliateException(message)
+            raise GofilliateAuthException(message)
 
     def decode_token(self, token_str: str) -> AffiliateData:
         url = self.get_decode_string
