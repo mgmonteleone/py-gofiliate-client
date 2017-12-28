@@ -1,4 +1,5 @@
-[![GitHub version](https://badge.fury.io/gh/mgmonteleone%2Fpy-gofilliate-client.svg)](https://badge.fury.io/gh/mgmonteleone%2Fpy-gofilliate-client)
+[![PyPI version](https://badge.fury.io/py/gofilliate.svg)](https://badge.fury.io/py/gofilliate)
+[![Build Status](https://travis-ci.org/mgmonteleone/py-gofilliate-client.svg?branch=master)](https://travis-ci.org/mgmonteleone/py-gofilliate-client)
 # py-gofilliate-client
 
 Simple python bindings for the gofilliate API.
