@@ -17,7 +17,7 @@ def logged_in():
     responses.add(responses.POST, 'https://{}/admin/login'.format(URL),
                   json=LOGIN_DATA, status=200)
 
-    session: gofilliate.Gofilliate = gofilliate.Gofilliate(username=LOGIN, password=PASSWORD, host=URL)
+    session = gofilliate.Gofilliate(username=LOGIN, password=PASSWORD, host=URL)
     return session
 
 @pytest.fixture()
@@ -28,7 +28,7 @@ def decoded():
     responses.add(responses.POST, 'https://{}/admin/reports/token-analysis'.format(URL),
                   json=DECODE_DATA, status=200)
 
-    session: gofilliate.Gofilliate = gofilliate.Gofilliate(username=LOGIN, password=PASSWORD, host=URL)
+    session = gofilliate.Gofilliate(username=LOGIN, password=PASSWORD, host=URL)
     output = session.decode_token(TOKEN)
     return output
 
