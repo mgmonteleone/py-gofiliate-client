@@ -102,4 +102,10 @@ class Gofilliate(object):
         url = self.get_decode_string
         post_data = dict(token=token_str)
         response = self.send_request('POST', url, post_data)
-        return AffiliateData(response.get('stats'))
+        try:
+            return_data = AffiliateData(response.get('stats'))
+        except Exception as e:
+            self.logger.error(e)
+            self.logger.error('Could not deconds the sent token: {}'.format(token_str))
+            raise GofilliateException('Could not decode the sent token. {}'.format(token_str))
+        return return_data
