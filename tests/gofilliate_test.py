@@ -89,7 +89,6 @@ def test_decoded_id(decoded: gofilliate.AffiliateData):
 def test_initiate_login_fail():
     """
     Ensure that we can instantiate the obj (using mock)
-    :param logged_in:
     """
     with pytest.raises(gofilliate.GofilliateAuthException):
         responses.add(responses.POST, 'https://{}/admin/login'.format(URL),
