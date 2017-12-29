@@ -4,8 +4,12 @@ import logging
 
 class GofilliateException(Exception):
     pass
+
+
 class GofilliateAuthException(GofilliateException):
     pass
+
+
 class AffiliateData(object):
     """
             Stores affiliate date returned from Gofilliate.
@@ -14,13 +18,14 @@ class AffiliateData(object):
 
             :param stats_dict: The dict as returned by the gofilliates api.
             """
+
     def __init__(self, stats_dict: dict) -> None:
         #: the email of the affiliate user
-        self.email = stats_dict.get('email', None) # type: str
+        self.email = stats_dict.get('email', None)  # type: str
         #: The user_id of affiliate user
-        self.user_id = stats_dict.get('user_id', None) #type: str
+        self.user_id = stats_dict.get('user_id', None)  # type: str
         #: The username of the affiliate user
-        self.username = stats_dict.get('username', None) #type:str
+        self.username = stats_dict.get('username', None)  # type:str
 
 
 class Gofilliate(object):
@@ -34,13 +39,14 @@ class Gofilliate(object):
      :param retries: number of retries when auth fails.
      :param timeout: How long in seconds to wait for a response from Gofilliate
     """
+
     def __init__(self
                  , username: str
                  , password: str
                  , host: str
-                 , port: int=None
-                 , retries: int=3
-                 , timeout: int=10) -> None:
+                 , port: int = None
+                 , retries: int = 3
+                 , timeout: int = 10) -> None:
         """
         Class for authenticating and decoding goaffiliate data.
 

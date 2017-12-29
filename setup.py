@@ -34,6 +34,6 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6'
     ],
-    install_requires=['requests>=2.18','pytest==3.1.3', 'responses'],
+    install_requires=['requests>=2.18', 'pytest==3.1.3', 'responses'],
     test_suite="tests",
 )
