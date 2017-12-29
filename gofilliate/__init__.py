@@ -113,10 +113,9 @@ class Gofilliate(object):
         result_status = response.status_code
         if result_status != 200:
             raise GofilliateException('%s: %s %s' % (result_status, url, data))
-        elif result_status == 200:
-            if response.json().get('code', None) == 'FAILURE_CREDENTIAL_INVALID':
-                message = 'Authentication Failed!'
-                raise GofilliateAuthException(message)
+        elif result_status == 200 and response.json().get('code', None) == 'FAILURE_CREDENTIAL_INVALID' :
+            message = 'Authentication Failed!'
+            raise GofilliateAuthException(message)
         return response.json()
 
     def authenticate(self):
