@@ -7,13 +7,33 @@ class GofilliateException(Exception):
 class GofilliateAuthException(GofilliateException):
     pass
 class AffiliateData(object):
+    """
+            Stores affiliate date returned from Gofilliate.
+
+            Will be expanded as more data is available.
+
+            :param stats_dict: The dict as returned by the gofilliates api.
+            """
     def __init__(self, stats_dict: dict) -> None:
-        self.email = stats_dict.get('email', None)
-        self.user_id = stats_dict.get('user_id', None)
-        self.username = stats_dict.get('username', None)
+        #: the email of the affiliate user
+        self.email = stats_dict.get('email', None) # type: str
+        #: The user_id of affiliate user
+        self.user_id = stats_dict.get('user_id', None) #type: str
+        #: The username of the affiliate user
+        self.username = stats_dict.get('username', None) #type:str
 
 
 class Gofilliate(object):
+    """
+     Class for authenticating and decoding goaffiliate data.
+
+     :param username: The goafillites admin username assigned to your account
+     :param password: The goafillites admin password assigned to your account
+     :param host: The gofilliates hostname for your account
+     :param port: http port (default 443)
+     :param retries: number of retries when auth fails.
+     :param timeout: How long in seconds to wait for a response from Gofilliate
+    """
     def __init__(self
                  , username: str
                  , password: str
@@ -21,6 +41,16 @@ class Gofilliate(object):
                  , port: int=None
                  , retries: int=3
                  , timeout: int=10) -> None:
+        """
+        Class for authenticating and decoding goaffiliate data.
+
+        :param username: The goafillites admin username assigned to your account
+        :param password: The goafillites admin password assigned to your account
+        :param host: The gofilliates hostname for your account
+        :param port: http port (default 443)
+        :param retries: number of retries when auth fails.
+        :param timeout: How long in seconds to wait for a response from Gofilliate
+        """
         self.username = username  # type: str
         self.password = password  # type: str
         self.host = host  # type: str
@@ -84,7 +114,10 @@ class Gofilliate(object):
         return response.json()
 
     def authenticate(self):
-        """Authenticate to the API"""
+        """Authenticate to the API
+
+        Stores the bearer_token in self for reuse in subsequent calls.
+        """
         url = self.get_login_query_string  # type: str
         post_data = dict(username=self.username, password=self.password)
         response = self.send_request('POST', url, post_data)
@@ -97,6 +130,12 @@ class Gofilliate(object):
             raise GofilliateAuthException(message)
 
     def decode_token(self, token_str: str) -> AffiliateData:
+        """
+        Returns affiliate information for the provided token.
+
+        :param token_str: The guid-like token string to be decoded.
+        :return:
+        """
         url = self.get_decode_string
         post_data = dict(token=token_str)
         response = self.send_request('POST', url, post_data)
