@@ -2,11 +2,11 @@ from requests import Session
 import logging
 
 
-class GofilliateException(Exception):
+class GofiliateException(Exception):
     pass
 
 
-class GofilliateAuthException(GofilliateException):
+class GofiliateAuthException(GofiliateException):
     pass
 
 
@@ -28,12 +28,12 @@ class AffiliateData(object):
         self.username = stats_dict.get('username', None)  # type:str
 
 
-class Gofilliate(object):
+class Gofiliate(object):
     """
      Class for authenticating and decoding goaffiliate data.
 
-     :param username: The goafillites admin username assigned to your account
-     :param password: The goafillites admin password assigned to your account
+     :param username: The gofilates admin username assigned to your account
+     :param password: The gofilates admin password assigned to your account
      :param host: The gofilliates hostname for your account
      :param port: http port (default 443)
      :param retries: number of retries when auth fails.
@@ -50,8 +50,8 @@ class Gofilliate(object):
         """
         Class for authenticating and decoding goaffiliate data.
 
-        :param username: The goafillites admin username assigned to your account
-        :param password: The goafillites admin password assigned to your account
+        :param username: The gofilates admin username assigned to your account
+        :param password: The gofilates admin password assigned to your account
         :param host: The gofilliates hostname for your account
         :param port: http port (default 443)
         :param retries: number of retries when auth fails.
@@ -108,14 +108,14 @@ class Gofilliate(object):
             message = '''Failed to receive valid reponse after {count} retries.
                 Last caught exception -- {klass}: {message}
             '''.format(klass=type(e), message=e, count=self.retries)
-            raise GofilliateAuthException(message)
+            raise GofiliateAuthException(message)
 
         result_status = response.status_code
         if result_status != 200:
-            raise GofilliateException('%s: %s %s' % (result_status, url, data))
+            raise GofiliateException('%s: %s %s' % (result_status, url, data))
         elif result_status == 200 and response.json().get('code', None) == 'FAILURE_CREDENTIAL_INVALID' :
             message = 'Authentication Failed!'
-            raise GofilliateAuthException(message)
+            raise GofiliateAuthException(message)
         return response.json()
 
     def authenticate(self):
@@ -132,7 +132,7 @@ class Gofilliate(object):
             self.logger.info('Authorized successfully, received token {}'.format(self.auth_token))
         except Exception:
             message = 'Problem getting auth'
-            raise GofilliateAuthException(message)
+            raise GofiliateAuthException(message)
 
     def decode_token(self, token_str: str) -> AffiliateData:
         """
@@ -149,5 +149,5 @@ class Gofilliate(object):
         except Exception as e:
             self.logger.error(e)
             self.logger.error('Could not decode the sent token: {}'.format(token_str))
-            raise GofilliateException('Could not decode the sent token. {}'.format(token_str))
+            raise GofiliateException('Could not decode the sent token. {}'.format(token_str))
         return return_data

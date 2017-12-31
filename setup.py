@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-VERSION = (1, 2, 0, 'final', 0)
+VERSION = (1, 2, 1, 'final', 0)
 
 
 def get_version():
@@ -21,7 +21,7 @@ setup(
     author="iGP Technologies d.o.o.",
     author_email="mgm@igpte.ch",
     license="BSD",
-    description="gofilliate Python bindings.",
+    description="Gofiliate Python bindings.",
     url="https://github.com/mgmonteleone/py-gofiliate-client",
     packages=find_packages(),
     classifiers=[
