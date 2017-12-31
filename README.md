@@ -1,4 +1,4 @@
-[![GitHub version](https://badge.fury.io/gh/mgmonteleone%2Fpy-gofiliate-client@2x.png)](https://badge.fury.io/gh/mgmonteleone%2Fpy-gofiliate-client)
+[![GitHub version](https://badge.fury.io/gh/mgmonteleone%2Fpy-gofiliate-client.svg)](https://badge.fury.io/gh/mgmonteleone%2Fpy-gofiliate-client)
 [![PyPI version](https://badge.fury.io/py/gofiliate.svg)](https://badge.fury.io/py/gofiliate)
 [![Build Status](https://travis-ci.org/mgmonteleone/py-gofiliate-client.svg?branch=master)](https://travis-ci.org/mgmonteleone/py-gofiliate-client)
 [![Maintainability](https://api.codeclimate.com/v1/badges/b568814903559f0dd39c/maintainability)](https://codeclimate.com/github/mgmonteleone/py-gofilliate-client/maintainability)
