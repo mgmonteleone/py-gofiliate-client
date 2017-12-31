@@ -17,7 +17,7 @@ def logged_in():
     responses.add(responses.POST, 'https://{}/admin/login'.format(URL),
                   json=LOGIN_DATA, status=200)
 
-    session = gofiliate.Gofilliate(username=LOGIN, password=PASSWORD, host=URL)
+    session = gofiliate.Gofiliate(username=LOGIN, password=PASSWORD, host=URL)
     return session
 
 
@@ -29,19 +29,19 @@ def decoded():
     responses.add(responses.POST, 'https://{}/admin/reports/token-analysis'.format(URL),
                   json=DECODE_DATA, status=200)
 
-    session = gofiliate.Gofilliate(username=LOGIN, password=PASSWORD, host=URL)
+    session = gofiliate.Gofiliate(username=LOGIN, password=PASSWORD, host=URL)
     output = session.decode_token(TOKEN)
     return output
 
 
 @responses.activate
-def test_initiate_handler(logged_in: gofiliate.Gofilliate):
+def test_initiate_handler(logged_in: gofiliate.Gofiliate):
     """
     Ensure that we can instantiate the obj (using mock)
     :param logged_in:
     """
     session = logged_in
-    assert type(session) is gofiliate.Gofilliate
+    assert type(session) is gofiliate.Gofiliate
 
 
 @responses.activate
@@ -51,19 +51,19 @@ def test_have_session(logged_in):
 
 
 @responses.activate
-def test_correct_username(logged_in: gofiliate.Gofilliate):
+def test_correct_username(logged_in: gofiliate.Gofiliate):
     session = logged_in
     assert session.username == LOGIN
 
 
 @responses.activate
-def test_correct_auth_token(logged_in: gofiliate.Gofilliate):
+def test_correct_auth_token(logged_in: gofiliate.Gofiliate):
     session = logged_in
     assert session.auth_token == BEARER_TOKEN
 
 
 @responses.activate
-def test_correct_URL(logged_in: gofiliate.Gofilliate):
+def test_correct_URL(logged_in: gofiliate.Gofiliate):
     session = logged_in
     assert session.get_login_query_string == 'https://{}/admin/login'.format(URL)
     assert session.base_url == 'https://{}'.format(URL)
@@ -100,21 +100,21 @@ def test_initiate_login_fail():
     """
     Ensure that we can instantiate the obj (using mock)
     """
-    with pytest.raises(gofiliate.GofilliateAuthException):
+    with pytest.raises(gofiliate.GofiliateAuthException):
         responses.add(responses.POST, 'https://{}/admin/login'.format(URL),
                       json=LOGIN_FAIL_DATA, status=200)
 
-        session = gofiliate.Gofilliate(username=LOGIN, password=PASSWORD + "1", host=URL)
+        session = gofiliate.Gofiliate(username=LOGIN, password=PASSWORD + "1", host=URL)
         pprint(session.__dict__)
 
 
 @responses.activate
 def test_decoded_failure():
-    with pytest.raises(gofiliate.GofilliateException):
+    with pytest.raises(gofiliate.GofiliateException):
         responses.add(responses.POST, 'https://{}/admin/login'.format(URL),
                       json=LOGIN_DATA, status=200)
         responses.add(responses.POST, 'https://{}/admin/reports/token-analysis'.format(URL),
                       json=DECODE_FAIL_DATA, status=200)
 
-        session = gofiliate.Gofilliate(username=LOGIN, password=PASSWORD, host=URL)
+        session = gofiliate.Gofiliate(username=LOGIN, password=PASSWORD, host=URL)
         output = session.decode_token(TOKEN)
