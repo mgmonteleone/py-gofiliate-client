@@ -1,36 +1,18 @@
 from requests import Session
 import logging
-
-
-class GofiliateException(Exception):
-    pass
-
-
-class GofiliateAuthException(GofiliateException):
-    pass
-
-
-class AffiliateData(object):
-    """
-            Stores affiliate date returned from Gofilliate.
-
-            Will be expanded as more data is available.
-
-            :param stats_dict: The dict as returned by the gofilliates api.
-            """
-
-    def __init__(self, stats_dict: dict) -> None:
-        #: the email of the affiliate user
-        self.email = stats_dict.get('email', None)  # type: str
-        #: The user_id of affiliate user
-        self.user_id = stats_dict.get('user_id', None)  # type: str
-        #: The username of the affiliate user
-        self.username = stats_dict.get('username', None)  # type:str
+from datetime import datetime
+from pprint import pprint
+from gofiliate.lib import short_date_to_date, Figures, ListofFigures\
+    , GofiliateDataException, GofiliateException, GofiliateAuthException, AffiliateData
+import pandas
+from typing import Optional
 
 
 class Gofiliate(object):
     """
-     Class for authenticating and decoding goaffiliate data.
+     Base class for Gofiliate information.
+
+     Handles authentication and base URL retrieval mechanisms.
 
      :param username: The gofilates admin username assigned to your account
      :param password: The gofilates admin password assigned to your account
@@ -48,7 +30,9 @@ class Gofiliate(object):
                  , retries: int = 3
                  , timeout: int = 10) -> None:
         """
-        Class for authenticating and decoding goaffiliate data.
+        Base class for Gofiliate information.
+
+        Handles authentication and base URL retrieval mechanisms.
 
         :param username: The gofilates admin username assigned to your account
         :param password: The gofilates admin password assigned to your account
@@ -88,14 +72,9 @@ class Gofiliate(object):
             port=self.port)  # type: str
 
     @property
-    def get_login_query_string(self) -> str:
+    def _get_login_query_string(self) -> str:
         """Generates a login API path"""
         return '{base}/admin/login'.format(base=self.base_url)
-
-    @property
-    def get_decode_string(self) -> str:
-        """Generates the decode API path"""
-        return '{base}/admin/reports/token-analysis'.format(base=self.base_url)
 
     def send_request(self, method: str, url: str, data: dict) -> dict:
         """Dispatches the request and returns a response"""
@@ -113,7 +92,7 @@ class Gofiliate(object):
         result_status = response.status_code
         if result_status != 200:
             raise GofiliateException('%s: %s %s' % (result_status, url, data))
-        elif result_status == 200 and response.json().get('code', None) == 'FAILURE_CREDENTIAL_INVALID' :
+        elif result_status == 200 and response.json().get('code', None) == 'FAILURE_CREDENTIAL_INVALID':
             message = 'Authentication Failed!'
             raise GofiliateAuthException(message)
         return response.json()
@@ -123,7 +102,7 @@ class Gofiliate(object):
 
         Stores the bearer_token in self for reuse in subsequent calls.
         """
-        url = self.get_login_query_string  # type: str
+        url = self._get_login_query_string  # type: str
         post_data = dict(username=self.username, password=self.password)
         response = self.send_request('POST', url, post_data)
         try:
@@ -134,20 +113,101 @@ class Gofiliate(object):
             message = 'Problem getting auth'
             raise GofiliateAuthException(message)
 
-    def decode_token(self, token_str: str) -> AffiliateData:
+
+class GofiliateTokenDecoder(Gofiliate):
+    def __init__(self, username: str, password: str, host: str, token: str) -> None:
+        super().__init__(username, password, host)
         """
-        Returns affiliate information for the provided token.
+        Retrieves affiliate information for the passed token.
+        
+        The decoded token info is found in the affiliate_data property
 
         :param token_str: The guid-like token string to be decoded.
-        :return:
         """
-        url = self.get_decode_string
-        post_data = dict(token=token_str)
+        self.token = token
+
+    @property
+    def affiliate_data(self) -> Optional[AffiliateData]:
+        url = self._get_decode_string
+        post_data = dict(token=self.token)
         response = self.send_request('POST', url, post_data)
         try:
-            return_data = AffiliateData(response.get('stats'))
+            return AffiliateData(response.get('stats'))  # type: Optional[AffiliateData]
         except Exception as e:
             self.logger.error(e)
-            self.logger.error('Could not decode the sent token: {}'.format(token_str))
-            raise GofiliateException('Could not decode the sent token. {}'.format(token_str))
-        return return_data
+            self.logger.error('Could not decode the sent token: {}'.format(self.token))
+            return None
+
+    @property
+    def _get_decode_string(self) -> str:
+        """Generates the decode API path"""
+        return '{base}/admin/reports/token-analysis'.format(base=self.base_url)
+
+
+class GofiliateMainWidgetReport(Gofiliate):
+    def __init__(self, username: str, password: str, host: str):
+
+        super().__init__(username, password, host)
+        self.report_figures = list()  # type: ListofFigures
+        self.report_pivot = None  # type: pandas.DataFrame
+
+    @property
+    def _get_base_report_query_string(self) -> str:
+        """Generates a main widget report path"""
+        return '{base}/admin/widgets/main'.format(base=self.base_url)
+
+    def get_basic_report(self
+                         , date_from: datetime
+                         , date_to: datetime
+                         , group_by: str = "month"
+                         , sum_all: int = 0) -> ListofFigures:
+        url = self._get_base_report_query_string
+        date_from_text = date_from.isoformat()  # type: str
+        date_to_text = date_to.isoformat()  # type: str
+        post_data = dict(
+            start_date=date_from_text
+            , end_date=date_to_text
+            , group=group_by
+            , sum=sum_all
+        )
+        response = self.send_request('POST', url, post_data)
+        return_data = response
+        if return_data.get("action", None) == "SUCCESS" and return_data.get("code", None) is True:
+            self.logger.warning('Successfully retrieved data.')
+        else:
+            self.logger.error("Unable to retreive data")
+            self.logger.error(response)
+            raise GofiliateDataException("Unable to retrieve data.")
+
+        report_figures = return_data.get('figures', list())  # type: list
+        if len(report_figures) == 0:
+            self.logger.warning("No figures were returned from the query, check your query.")
+            return report_figures
+        else:
+            for figure in report_figures:
+                try:
+                    a_figure = Figures(
+                        amount=figure.get('amount', None)
+                        , date=figure.get('date', None)
+                        , event_id=figure.get('event_id', None)
+                        , event_name=figure.get('event_name', None)
+                    )
+                    self.report_figures.append(a_figure.__dict__)
+                except Exception as e:
+                    self.logger.error('Could not parse a sent figure, will not  be included in list')
+                    self.logger.error(e.__str__())
+                    self.logger.error(a_figure)
+
+            columns = ['amount','date','event_id','event_name']
+            self.df = pandas.DataFrame.from_records(self.report_figures,columns=columns)  # type: pandas.DataFrame
+            self.df['date'] = pandas.to_datetime(self.df['date'])
+            self.df.index = self.df['date']
+            self.report_pivot = self.df.pivot(index='date',columns='event_name',values='amount')  # type: pandas.DataFrame
+            return self.report_figures
+
+
+#test_from = datetime(year=2017, month=11, day=1)
+#test_to = datetime(year=2017, month=12, day=31)
+#obj = Gofiliate(username="igpadmin", password="a2KrTTBcRu", host="aff-api.fairplaycasino.com")
+#obj.get_basic_report(test_from, test_to)
+#pprint(obj.report_pivot.to_csv())
