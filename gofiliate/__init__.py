@@ -1,13 +1,15 @@
 from requests import Session
 import logging
-from datetime import datetime
 from pprint import pprint
+from typing import Iterator
+from datetime import date
 from gofiliate.lib import short_date_to_date, Figures, ListofFigures \
     , GofiliateDataException, GofiliateException, GofiliateAuthException \
-    , AffiliateData, BaseWidgetReportRequest, ReportConfig, AffiliateDetailsRequest, AffiliateDetails \
-    , DailyBreakDownData, DailyBreakdownRequest, MonthlyBreakDownData, AffiliateEarningsData
+    , AffiliateData, BaseWidgetReportRequest, AffiliateDetailsRequest, AffiliateDetails \
+    , DailyBreakDownData, StandardRequest, MonthlyBreakDownData, AffiliateEarningsData \
+    , AffiliateNDCSData, ReportConfigurations, BaseRequest, BreakdownData, BaseWidgetData
 import pandas
-from typing import Optional
+from typing import Optional, List, Dict, Iterator
 
 
 class Gofiliate(object):
@@ -23,22 +25,6 @@ class Gofiliate(object):
      :param retries: number of retries when auth fails.
      :param timeout: How long in seconds to wait for a response from Gofilliate
     """
-    BASE_WIDGET = ReportConfig("{base}/admin/widgets/main"
-                               , request_obj=BaseWidgetReportRequest
-                               , data_obj=Figures)
-    DAILY_BREAKDOWN = ReportConfig("{base}/reports/daily-breakdown"
-                                   , request_obj=DailyBreakdownRequest
-                                   , data_obj=DailyBreakDownData)
-    MONTHLY_BREAKDOWN = ReportConfig("{base}/reports/monthly-breakdown"
-                                     , request_obj=DailyBreakdownRequest
-                                     , data_obj=MonthlyBreakDownData)
-    AFFILIATE_EARNINGS = ReportConfig("{base}/reports/affiliate-earnings"
-                                      , request_obj=DailyBreakdownRequest
-                                      , data_obj=AffiliateEarningsData)
-    AFFILIATE_NDCS = ReportConfig("{base}/reports/affiliate-ndcs")
-    AFFILIATE_DETAILS = ReportConfig("{base}/reports/affiliate-details"
-                                     , request_obj=AffiliateDetailsRequest
-                                     , data_obj=AffiliateDetails)
 
     def __init__(self
                  , username: str
@@ -162,65 +148,144 @@ class GofiliateTokenDecoder(Gofiliate):
         return '{base}/admin/reports/token-analysis'.format(base=self.base_url)
 
 
-class GofiliateMainWidgetReport(Gofiliate):
+class GofiliateReportBase(object):
+    """
+    Generates data reports from gofiliate endpoints.
+
+    Takes a gofiliate client instance
+
+    To choose the report to run, pass a ReportConfiguration ENUM choice.
+
+    """
+
     def __init__(self
-                 , username: str
-                 , password: str
-                 , host: str
-                 , request_obj: BaseWidgetReportRequest):
+                 , gofiliate_client: Gofiliate
+                 , report_config_enum: ReportConfigurations
+                 , request_object: BaseRequest):
 
-        super().__init__(username, password, host)
-
+        self.client = gofiliate_client
         self.report_raw_data = list()  # type: ListofFigures
-        self.report_pivot = None  # type: pandas.DataFrame
-        self.report_figures = None  # type: Optional[ListofFigures]
+        self.report_config = report_config_enum  # type: ReportConfigurations
+        # Check to ensure that the sent request_object is of the correct type:
+        self.client.logger.debug("Sent request object is {}".format(type(request_object)))
+        self.client.logger.debug("Required request object is {}".format(self.report_config.value.request_obj))
+        try:
+            assert type(request_object) == self.report_config.value.request_obj
+        except AssertionError:
+            raise GofiliateException('The sent request object'
+                                     ' is of type {}, required type is {}'
+                                     .format(type(request_object), self.report_config.value.request_obj))
         # Set up the REST call
-        url = self._get_base_report_query_string
+        url = report_config_enum.value.url.format(base=gofiliate_client.base_url)
         # Transform the dates to text
         # Create The payload
-        response = self.send_request('POST', url, request_obj.__dict__)
+        response = self.client.send_request('POST', url, request_object.__dict__)
         return_data = response
         if return_data.get("action", None) == "SUCCESS" and return_data.get("code", None) is True:
-            self.logger.warning('Successfully retrieved data.')
+            self.client.logger.warning('Successfully retrieved data.')
         else:
-            self.logger.error("Unable to retrieve data")
-            self.logger.error(response)
+            self.client.logger.error("Unable to retrieve data")
+            self.client.logger.error(response)
             raise GofiliateDataException("Unable to retrieve data.")
 
-        self.report_raw_data = return_data.get('figures', list())  # type: list
+        # First Extract the raw response
+        data_node = report_config_enum.value.data_node
+        self.report_raw_data = return_data.get(data_node, list())  # type: list
+        self.client.logger.warning('Received {} items'.format(len(self.report_raw_data)))
+
+    @property
+    def report_data(self) -> Iterator[object]:
         if len(self.report_raw_data) == 0:
-            self.logger.warning("No figures were returned from the query, check your query.")
-            self.report_figures = None
+            self.client.logger.warning("No figures were returned from the query, check your query.")
+            yield
         else:
             for figure in self.report_raw_data:
                 try:
-                    a_figure = Figures(
-                        amount=figure.get('amount', None)
-                        , date_str=figure.get('date', None)
-                        , event_id=figure.get('event_id', None)
-                        , event_name=figure.get('event_name', None)
-                    )
-                    self.report_raw_data.append(a_figure.__dict__)
-                except Exception as e:
-                    self.logger.error('Could not parse a sent figure, will not  be included in list')
-                    self.logger.error(e.__str__())
-                    self.logger.error(a_figure)
+                    a_figure = self.report_config.value.data_obj(data_dict=figure)
 
-            columns = ['amount', 'date', 'event_id', 'event_name']
-            self.df = pandas.DataFrame.from_records(self.report_raw_data, columns=columns)  # type: pandas.DataFrame
-            self.df['date'] = pandas.to_datetime(self.df['date'])
-            self.df.index = self.df['date']
-            self.report_pivot = self.df.pivot(index='date', columns='event_name',
-                                              values='amount')  # type: pandas.DataFrame
-            return self.report_raw_data
+                    yield a_figure
+                except Exception as e:
+                    self.client.logger.error('Could not parse a sent figure, will not  be included in list')
+                    self.client.logger.error(e.__str__())
+                    self.client.logger.error(a_figure)
 
     @property
-    def _get_base_report_query_string(self) -> str:
-        """Generates a main widget report path"""
-        return '{base}/admin/widgets/main'.format(base=self.base_url)
+    def report_data_dict(self) -> List[Dict]:
+        """
+        Returns an iteration of report_data as dicts.
+        """
+        for figure in self.report_data:
+            yield figure.__dict__
 
-# test_from = datetime(year=2017, month=11, day=1)
-# test_to = datetime(year=2017, month=12, day=31)
-# obj = Gofiliate(username="igpadmin", password="a2KrTTBcRu", host="aff-api.fairplaycasino.com")
-# obj.get_basic_report(test_from, test_to)
-# pprint(obj.report_pivot.to_csv())
+
+class BaseWidgetReport(GofiliateReportBase):
+    def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
+        request_object = BaseWidgetReportRequest(start_date=start_date
+                                                 , end_date=end_date)
+        super().__init__(gofiliate_client, ReportConfigurations.BASE_WIDGET, request_object)
+
+    @property
+    def report_pivot(self) -> pandas.DataFrame:
+        """
+        Pivoted report data.
+
+        As a pandas dataframe.
+        :return:
+        """
+        columns = ['amount', 'date', 'event_id', 'event_name']
+        df = pandas.DataFrame.from_records(self.report_data_dict, columns=columns)  # type: pandas.DataFrame
+        df['date'] = pandas.to_datetime(df['date'])
+        df.index = df['date']
+        return df.pivot(index='date', columns='event_name',
+                        values='amount')  # type: pandas.DataFrame
+
+    @property
+    def report_pivot_csv(self) -> str:
+        """
+        The pivoted data as CSV
+        """
+        return self.report_pivot.to_csv()
+
+    @property
+    def report_pivot_objects(self) -> List[BaseWidgetData]:
+        for an_item in self.report_pivot.itertuples():
+            data_dict = dict(
+                date=an_item[0].to_pydatetime().date()
+                , GGR=an_item[1]
+                , NDC=an_item[2]
+                , NRC=an_item[3]
+                , admin_fee=an_item[4]
+                , deposits=an_item[5]
+                , earnings=an_item[6]
+                , netrev=an_item[7]
+                , total_bets=an_item[8]
+                , total_wins=an_item[9]
+                , withdrawals=an_item[10]
+            )
+            data_item = BaseWidgetData(data_dict=data_dict)
+            yield data_item
+
+    @property
+    def report_pivot_dicts(self) -> List[dict]:
+        for an_item in self.report_pivot_objects:
+            yield an_item.__dict__
+
+
+class DailyBreakdownReport(GofiliateReportBase):
+    """
+    Daily grouped report of key stats for the entire instance.
+    """
+
+    def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
+        request_object = StandardRequest(start_date=start_date, end_date=end_date)
+        super().__init__(gofiliate_client, ReportConfigurations.DAILY_BREAKDOWN, request_object)
+
+
+class MonthlyBreakdownReport(GofiliateReportBase):
+    """
+    Monthly grouped report of key stats for the entire instance.
+    """
+
+    def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
+        request_object = StandardRequest(start_date=start_date, end_date=end_date)
+        super().__init__(gofiliate_client, ReportConfigurations.MONTHLY_BREAKDOWN, request_object)
