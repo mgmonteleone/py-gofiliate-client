@@ -29,8 +29,8 @@ def decoded():
     responses.add(responses.POST, 'https://{}/admin/reports/token-analysis'.format(URL),
                   json=DECODE_DATA, status=200)
 
-    session = gofiliate.Gofiliate(username=LOGIN, password=PASSWORD, host=URL)
-    output = session.decode_token(TOKEN)
+    session = gofiliate.GofiliateTokenDecoder(username=LOGIN, password=PASSWORD, host=URL, token=TOKEN)
+    output = session.affiliate_data
     return output
 
 
@@ -65,7 +65,7 @@ def test_correct_auth_token(logged_in: gofiliate.Gofiliate):
 @responses.activate
 def test_correct_URL(logged_in: gofiliate.Gofiliate):
     session = logged_in
-    assert session.get_login_query_string == 'https://{}/admin/login'.format(URL)
+    assert session._get_login_query_string == 'https://{}/admin/login'.format(URL)
     assert session.base_url == 'https://{}'.format(URL)
 
 
@@ -110,11 +110,11 @@ def test_initiate_login_fail():
 
 @responses.activate
 def test_decoded_failure():
-    with pytest.raises(gofiliate.GofiliateException):
-        responses.add(responses.POST, 'https://{}/admin/login'.format(URL),
-                      json=LOGIN_DATA, status=200)
-        responses.add(responses.POST, 'https://{}/admin/reports/token-analysis'.format(URL),
-                      json=DECODE_FAIL_DATA, status=200)
+    responses.add(responses.POST, 'https://{}/admin/login'.format(URL),
+                  json=LOGIN_DATA, status=200)
+    responses.add(responses.POST, 'https://{}/admin/reports/token-analysis'.format(URL),
+                  json=DECODE_FAIL_DATA, status=200)
 
-        session = gofiliate.Gofiliate(username=LOGIN, password=PASSWORD, host=URL)
-        output = session.decode_token(TOKEN)
+    session = gofiliate.GofiliateTokenDecoder(username=LOGIN, password=PASSWORD, host=URL, token=TOKEN)
+    output = session.affiliate_data
+    assert output is None
