@@ -247,7 +247,7 @@ class BaseWidgetReport(GofiliateReportBase):
         return self.report_pivot.to_csv()
 
     @property
-    def report_pivot_objects(self) -> List[BaseWidgetData]:
+    def report_pivot_objects(self) -> Iterator[BaseWidgetData]:
         for an_item in self.report_pivot.itertuples():
             data_dict = dict(
                 date=an_item[0].to_pydatetime().date()
@@ -266,7 +266,7 @@ class BaseWidgetReport(GofiliateReportBase):
             yield data_item
 
     @property
-    def report_pivot_dicts(self) -> List[dict]:
+    def report_pivot_dicts(self) -> Iterator[dict]:
         for an_item in self.report_pivot_objects:
             yield an_item.__dict__
 
