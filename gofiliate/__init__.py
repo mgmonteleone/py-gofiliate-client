@@ -2,8 +2,10 @@ from requests import Session
 import logging
 from datetime import datetime
 from pprint import pprint
-from gofiliate.lib import short_date_to_date, Figures, ListofFigures\
-    , GofiliateDataException, GofiliateException, GofiliateAuthException, AffiliateData
+from gofiliate.lib import short_date_to_date, Figures, ListofFigures \
+    , GofiliateDataException, GofiliateException, GofiliateAuthException \
+    , AffiliateData, BaseWidgetReportRequest, ReportConfig, AffiliateDetailsRequest, AffiliateDetails \
+    , DailyBreakDownData, DailyBreakdownRequest, MonthlyBreakDownData, AffiliateEarningsData
 import pandas
 from typing import Optional
 
@@ -21,6 +23,22 @@ class Gofiliate(object):
      :param retries: number of retries when auth fails.
      :param timeout: How long in seconds to wait for a response from Gofilliate
     """
+    BASE_WIDGET = ReportConfig("{base}/admin/widgets/main"
+                               , request_obj=BaseWidgetReportRequest
+                               , data_obj=Figures)
+    DAILY_BREAKDOWN = ReportConfig("{base}/reports/daily-breakdown"
+                                   , request_obj=DailyBreakdownRequest
+                                   , data_obj=DailyBreakDownData)
+    MONTHLY_BREAKDOWN = ReportConfig("{base}/reports/monthly-breakdown"
+                                     , request_obj=DailyBreakdownRequest
+                                     , data_obj=MonthlyBreakDownData)
+    AFFILIATE_EARNINGS = ReportConfig("{base}/reports/affiliate-earnings"
+                                      , request_obj=DailyBreakdownRequest
+                                      , data_obj=AffiliateEarningsData)
+    AFFILIATE_NDCS = ReportConfig("{base}/reports/affiliate-ndcs")
+    AFFILIATE_DETAILS = ReportConfig("{base}/reports/affiliate-details"
+                                     , request_obj=AffiliateDetailsRequest
+                                     , data_obj=AffiliateDetails)
 
     def __init__(self
                  , username: str
@@ -145,69 +163,64 @@ class GofiliateTokenDecoder(Gofiliate):
 
 
 class GofiliateMainWidgetReport(Gofiliate):
-    def __init__(self, username: str, password: str, host: str):
+    def __init__(self
+                 , username: str
+                 , password: str
+                 , host: str
+                 , request_obj: BaseWidgetReportRequest):
 
         super().__init__(username, password, host)
-        self.report_figures = list()  # type: ListofFigures
+
+        self.report_raw_data = list()  # type: ListofFigures
         self.report_pivot = None  # type: pandas.DataFrame
+        self.report_figures = None  # type: Optional[ListofFigures]
+        # Set up the REST call
+        url = self._get_base_report_query_string
+        # Transform the dates to text
+        # Create The payload
+        response = self.send_request('POST', url, request_obj.__dict__)
+        return_data = response
+        if return_data.get("action", None) == "SUCCESS" and return_data.get("code", None) is True:
+            self.logger.warning('Successfully retrieved data.')
+        else:
+            self.logger.error("Unable to retrieve data")
+            self.logger.error(response)
+            raise GofiliateDataException("Unable to retrieve data.")
+
+        self.report_raw_data = return_data.get('figures', list())  # type: list
+        if len(self.report_raw_data) == 0:
+            self.logger.warning("No figures were returned from the query, check your query.")
+            self.report_figures = None
+        else:
+            for figure in self.report_raw_data:
+                try:
+                    a_figure = Figures(
+                        amount=figure.get('amount', None)
+                        , date_str=figure.get('date', None)
+                        , event_id=figure.get('event_id', None)
+                        , event_name=figure.get('event_name', None)
+                    )
+                    self.report_raw_data.append(a_figure.__dict__)
+                except Exception as e:
+                    self.logger.error('Could not parse a sent figure, will not  be included in list')
+                    self.logger.error(e.__str__())
+                    self.logger.error(a_figure)
+
+            columns = ['amount', 'date', 'event_id', 'event_name']
+            self.df = pandas.DataFrame.from_records(self.report_raw_data, columns=columns)  # type: pandas.DataFrame
+            self.df['date'] = pandas.to_datetime(self.df['date'])
+            self.df.index = self.df['date']
+            self.report_pivot = self.df.pivot(index='date', columns='event_name',
+                                              values='amount')  # type: pandas.DataFrame
+            return self.report_raw_data
 
     @property
     def _get_base_report_query_string(self) -> str:
         """Generates a main widget report path"""
         return '{base}/admin/widgets/main'.format(base=self.base_url)
 
-    def get_basic_report(self
-                         , date_from: datetime
-                         , date_to: datetime
-                         , group_by: str = "month"
-                         , sum_all: int = 0) -> ListofFigures:
-        url = self._get_base_report_query_string
-        date_from_text = date_from.isoformat()  # type: str
-        date_to_text = date_to.isoformat()  # type: str
-        post_data = dict(
-            start_date=date_from_text
-            , end_date=date_to_text
-            , group=group_by
-            , sum=sum_all
-        )
-        response = self.send_request('POST', url, post_data)
-        return_data = response
-        if return_data.get("action", None) == "SUCCESS" and return_data.get("code", None) is True:
-            self.logger.warning('Successfully retrieved data.')
-        else:
-            self.logger.error("Unable to retreive data")
-            self.logger.error(response)
-            raise GofiliateDataException("Unable to retrieve data.")
-
-        report_figures = return_data.get('figures', list())  # type: list
-        if len(report_figures) == 0:
-            self.logger.warning("No figures were returned from the query, check your query.")
-            return report_figures
-        else:
-            for figure in report_figures:
-                try:
-                    a_figure = Figures(
-                        amount=figure.get('amount', None)
-                        , date=figure.get('date', None)
-                        , event_id=figure.get('event_id', None)
-                        , event_name=figure.get('event_name', None)
-                    )
-                    self.report_figures.append(a_figure.__dict__)
-                except Exception as e:
-                    self.logger.error('Could not parse a sent figure, will not  be included in list')
-                    self.logger.error(e.__str__())
-                    self.logger.error(a_figure)
-
-            columns = ['amount','date','event_id','event_name']
-            self.df = pandas.DataFrame.from_records(self.report_figures,columns=columns)  # type: pandas.DataFrame
-            self.df['date'] = pandas.to_datetime(self.df['date'])
-            self.df.index = self.df['date']
-            self.report_pivot = self.df.pivot(index='date',columns='event_name',values='amount')  # type: pandas.DataFrame
-            return self.report_figures
-
-
-#test_from = datetime(year=2017, month=11, day=1)
-#test_to = datetime(year=2017, month=12, day=31)
-#obj = Gofiliate(username="igpadmin", password="a2KrTTBcRu", host="aff-api.fairplaycasino.com")
-#obj.get_basic_report(test_from, test_to)
-#pprint(obj.report_pivot.to_csv())
+# test_from = datetime(year=2017, month=11, day=1)
+# test_to = datetime(year=2017, month=12, day=31)
+# obj = Gofiliate(username="igpadmin", password="a2KrTTBcRu", host="aff-api.fairplaycasino.com")
+# obj.get_basic_report(test_from, test_to)
+# pprint(obj.report_pivot.to_csv())
