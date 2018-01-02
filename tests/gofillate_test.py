@@ -1,14 +1,26 @@
 import gofiliate
+import gofiliate.lib
 import responses
 import requests
 import pytest
+import logging
+from datetime import date
 from pprint import pprint
-from tests.mock import LOGIN_DATA, DECODE_DATA, NOW\
-    , EMAIL, USER_ID, USER_NAME, BEARER_TOKEN, LOGIN_FAIL_DATA, DECODE_FAIL_DATA
+from tests.mock import LOGIN_DATA, DECODE_DATA, NOW \
+    , EMAIL, USER_ID, USER_NAME, BEARER_TOKEN, LOGIN_FAIL_DATA, DECODE_FAIL_DATA \
+    , DAILY_BREAKDOWN_DATA, MONTHLY_BREAKDOWN_DATA
+from gofiliate.lib import ReportConfigurations
+from types import GeneratorType
+
+logger = logging.getLogger('test')
+logger.setLevel(logging.INFO)
+
 URL = 'api.testffiliates.com'
 LOGIN = 'apiReports'
 PASSWORD = '9EW4gkFs2a'
 TOKEN = '80a6547b-e380-41a8-a439-7d4d92fa11b4'
+START_DATE = date(2017, 12, 1)
+END_DATE = date(2018, 1, 1)
 
 
 @pytest.fixture()
@@ -31,6 +43,30 @@ def decoded():
 
     session = gofiliate.GofiliateTokenDecoder(username=LOGIN, password=PASSWORD, host=URL, token=TOKEN)
     output = session.affiliate_data
+    return output
+
+
+@pytest.fixture()
+@responses.activate
+def daily_breakdown():
+    responses.add(responses.POST, 'https://{}/admin/login'.format(URL),
+                  json=LOGIN_DATA, status=200)
+    responses.add(responses.POST, 'https://' + ReportConfigurations.DAILY_BREAKDOWN.value.url.format(base=URL)
+                  , json=DAILY_BREAKDOWN_DATA, status=200)
+    client = gofiliate.Gofiliate(username=LOGIN, password=PASSWORD, host=URL)
+    output = gofiliate.DailyBreakdownReport(gofiliate_client=client, start_date=START_DATE, end_date=END_DATE)
+    return output
+
+
+@pytest.fixture()
+@responses.activate
+def monthly_breakdown():
+    responses.add(responses.POST, 'https://{}/admin/login'.format(URL),
+                  json=LOGIN_DATA, status=200)
+    responses.add(responses.POST, 'https://' + ReportConfigurations.MONTHLY_BREAKDOWN.value.url.format(base=URL)
+                  , json=MONTHLY_BREAKDOWN_DATA, status=200)
+    client = gofiliate.Gofiliate(username=LOGIN, password=PASSWORD, host=URL)
+    output = gofiliate.MonthlyBreakdownReport(gofiliate_client=client, start_date=START_DATE, end_date=END_DATE)
     return output
 
 
@@ -63,7 +99,7 @@ def test_correct_auth_token(logged_in: gofiliate.Gofiliate):
 
 
 @responses.activate
-def test_correct_URL(logged_in: gofiliate.Gofiliate):
+def test_correct_url(logged_in: gofiliate.Gofiliate):
     session = logged_in
     assert session._get_login_query_string == 'https://{}/admin/login'.format(URL)
     assert session.base_url == 'https://{}'.format(URL)
@@ -91,6 +127,49 @@ def test_decoded_email(decoded: gofiliate.AffiliateData):
 def test_decoded_id(decoded: gofiliate.AffiliateData):
     output = decoded
     assert output.user_id == USER_ID
+
+
+@responses.activate
+def test_daily_breakdown_type_obj(daily_breakdown: gofiliate.DailyBreakdownReport):
+    assert type(daily_breakdown.report_data) == GeneratorType
+    for item in daily_breakdown.report_data:
+        assert type(item) == gofiliate.lib.DailyBreakDownData
+
+
+@responses.activate
+def test_daily_breakdown_counts(daily_breakdown: gofiliate.DailyBreakdownReport):
+    """
+    Test to ensure that the number of elements in all three data lists are the same.
+    """
+    raw_count = len(daily_breakdown.report_raw_data)
+    data_count = len(daily_breakdown.report_raw_data)
+    dict_count = sum(1 for w in daily_breakdown.report_data_dict)
+    logger.info('Data Count {}'.format(data_count))
+    logger.info('Raw Count {}'.format(raw_count))
+    logger.info('Dict Count {}'.format(dict_count))
+    assert raw_count == data_count == dict_count
+
+
+@responses.activate
+def test_monthly_breakdown_type_obj(monthly_breakdown: gofiliate.MonthlyBreakdownReport):
+    assert type(monthly_breakdown.report_data) == GeneratorType
+    for item in monthly_breakdown.report_data:
+        assert type(item) == gofiliate.lib.MonthlyBreakDownData
+
+
+@responses.activate
+def test_monthly_breakdown_counts(monthly_breakdown: gofiliate.MonthlyBreakdownReport):
+    """
+    Test to ensure that the number of elements in all three data lists are the same.
+    """
+    raw_count = len(monthly_breakdown.report_raw_data)
+    data_count = len(monthly_breakdown.report_raw_data)
+    dict_count = sum(1 for w in monthly_breakdown.report_data_dict)
+    logger.info('Data Count {}'.format(data_count))
+    logger.info('Raw Count {}'.format(raw_count))
+    logger.info('Dict Count {}'.format(dict_count))
+    assert raw_count == data_count == dict_count
+
 
 # FAIL TESTS
 
