@@ -6,7 +6,7 @@ from gofiliate.lib import short_date_to_date, Figures, ListofFigures \
     , GofiliateDataException, GofiliateException, GofiliateAuthException \
     , AffiliateData, BaseWidgetReportRequest, AffiliateDetailsRequest, AffiliateDetails \
     , DailyBreakDownData, StandardRequest, MonthlyBreakDownData, AffiliateEarningsData \
-    , AffiliateNDCSData, ReportConfigurations, BaseRequest, BreakdownData, BaseWidgetData
+    , AffiliateNDCSData, ReportConfigurations, BaseRequest, BreakdownData, BaseWidgetData, AffiliateStatuses
 import pandas
 from typing import Optional, List, Dict, Iterator
 
@@ -207,7 +207,6 @@ class GofiliateReportBase(object):
                 except Exception as e:
                     self.client.logger.error('Could not parse a sent figure, will not  be included in list')
                     self.client.logger.error(e.__str__())
-                    self.client.logger.error(a_figure)
                     yield None
 
     @property
@@ -225,6 +224,7 @@ class BaseWidgetReport(GofiliateReportBase):
 
     Has extra types, since the data is easier to consume in pivoted form.
     """
+
     def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
         request_object = BaseWidgetReportRequest(start_date=start_date
                                                  , end_date=end_date)
@@ -305,3 +305,22 @@ class MonthlyBreakdownReport(GofiliateReportBase):
     def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
         request_object = StandardRequest(start_date=start_date, end_date=end_date)
         super().__init__(gofiliate_client, ReportConfigurations.MONTHLY_BREAKDOWN, request_object)
+
+
+class AffiliateEarningsReport(GofiliateReportBase):
+    def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
+        request_object = StandardRequest(start_date=start_date, end_date=end_date)
+        super().__init__(gofiliate_client, ReportConfigurations.AFFILIATE_EARNINGS, request_object)
+
+
+class AffiliateDetailReport(GofiliateReportBase):
+    def __init__(self, gofiliate_client: Gofiliate, start_date: date, status: AffiliateStatuses):
+        request_object = AffiliateDetailsRequest(join_date_from=start_date, status=status)
+
+        super().__init__(gofiliate_client, ReportConfigurations.AFFILIATE_DETAILS, request_object)
+
+
+class AffiliateNDCSReport(GofiliateReportBase):
+    def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
+        request_object = StandardRequest(start_date=start_date, end_date=end_date)
+        super().__init__(gofiliate_client, ReportConfigurations.AFFILIATE_NDCS, request_object)

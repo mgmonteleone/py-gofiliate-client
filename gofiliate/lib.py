@@ -156,28 +156,28 @@ class AffiliateDetailsRequest(object):
 
 
 class AffiliateDetails(object):
-    def __init__(self, details_dict: dict):
+    def __init__(self, data_dict: dict):
         """
         Class for storing Affiliate Details, as returned by Gofiliate.
 
-        :param details_dict: A dict of data as returned by Gofiliate.
+        :param data_dict: A dict of data as returned by Gofiliate.
         """
-        self.username = details_dict.get("username", None)  # type: str
-        self.email = details_dict.get("email", None)  # type: str
-        self.first_name = details_dict.get("first_name", None)  # type: str
-        self.last_name = details_dict.get("last_name", None)  # type: str
-        self.dob = arrow.get(details_dict.get("dob", None)).date()  # type: date
-        self.phone = details_dict.get("phone", None)  # type: str
-        self.company_name = details_dict.get("company_name", None)  # type: str
-        self.company_websites = details_dict.get("company_websites", None)  # type: str
-        self.address1 = details_dict.get("address1", None)  # type: str
-        self.address2 = details_dict.get("address2", None)  # type: str
-        self.city = details_dict.get("city", None)  # type: str
-        self.postcode = details_dict.get("postcode", None)  # type: str
-        self.country = details_dict.get("country", None)  # type: str
-        self.status = details_dict.get("status", None)  # type: str
-        self.skype = details_dict.get("skype", None)  # type: str
-        self.join_date = arrow.get(details_dict.get("join_date", None)).date()  # type: date
+        self.username = data_dict.get("username", None)  # type: str
+        self.email = data_dict.get("email", None)  # type: str
+        self.first_name = data_dict.get("first_name", None)  # type: str
+        self.last_name = data_dict.get("last_name", None)  # type: str
+        self.dob = arrow.get(data_dict.get("dob", None)).date()  # type: date
+        self.phone = data_dict.get("phone", None)  # type: str
+        self.company_name = data_dict.get("company_name", None)  # type: str
+        self.company_websites = data_dict.get("company_websites", None)  # type: str
+        self.address1 = data_dict.get("address1", None)  # type: str
+        self.address2 = data_dict.get("address2", None)  # type: str
+        self.city = data_dict.get("city", None)  # type: str
+        self.postcode = data_dict.get("postcode", None)  # type: str
+        self.country = data_dict.get("country", None)  # type: str
+        self.status = data_dict.get("status", None)  # type: str
+        self.skype = data_dict.get("skype", None)  # type: str
+        self.join_date = arrow.get(data_dict.get("join_date", None)).date()  # type: date
 
 
 class ReportConfig(object):

@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-VERSION = (2, 0, 0, 'final', 0)
+VERSION = (2, 0, 1, 'final', 0)
 
 
 def get_version():
@@ -30,7 +30,6 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6'
     ],
