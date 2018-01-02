@@ -1,7 +1,6 @@
 language: python
 
 python:
-  - "3.4"
   - "3.5"
   - "3.6"
 # command to install dependencies
@@ -16,7 +15,7 @@ script:
   - python -m pytest tests/
 deploy:
   provider: pypi
-  user: "Your username"
+  user: "mgmonteleone"
   password:
     secure: "MeegFel6d6RYiQSW7dEYfYtndQfOpRWf/C7IaygC34uTPTeEMrG9atICmlzT0E05SJic+QKqLcqcFcVkFBpdhqmo1NNd7uXur7b+mH+zXwtE9S7pl8K5dgvYnfyaRK2+2z1gxiKhU2hlQkvtBO6PuZ/S+I3+Kz7mPoKT6txIuinVNkRCqXFOsvxMtXSBScO02h22NRANuC3uQHiNJqFhNJI0QWZLOoKib9+FXZqLT+KLWjnPC1nAt9oTpSgf0UlmduSaohrrPtCur51QWVd1ugaf12VD3QT7NNfQurN4R7KuYvPj+ckxGYtCIynb+h+jLgtIjc2SUkBCRipwGt5vSYCFMPSX7/yozs3wdoxXPOYdxZsoHk4O4QwF9oOhnzVTu+t7iJHdSpLzp4skVjKif5CIqH42wXhn6HJrtRNgLuEnRhmc53igAoex7WFXZGNBUKALQEvSFuN8SpGSI24XOu/XQgpo4Vj1V1Svy0Tz7+tL8k8LO8pJaXKucsRySe/ZcjFdaNZDZIHjDD7Uh7I5K1+DFGzaTUxtWpi9m72BZiX9kiAYFI6+5qh275Y2inyoZ1xure6C51utYUFwremtUW4nWiyS9MLkZdqjhSFp8gsI5bCR2oXdgp/ROVSHSthRS1fIOZQ9L12es033nvOkexyrtFp3mU7uoIwsUvtAo2Y="
   on:
