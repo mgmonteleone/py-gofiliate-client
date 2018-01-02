@@ -194,7 +194,7 @@ class GofiliateReportBase(object):
 
     # noinspection PyTypeChecker
     @property
-    def report_data(self) -> Generator[object,object,object]:
+    def report_data(self) -> Generator[object, object, object]:
         if len(self.report_raw_data) == 0:
             self.client.logger.warning("No figures were returned from the query, check your query.")
             yield
