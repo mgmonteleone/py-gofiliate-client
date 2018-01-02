@@ -1,7 +1,6 @@
 from requests import Session
 import logging
-from pprint import pprint
-from typing import Iterator
+from typing import Iterator, Generator
 from datetime import date
 from gofiliate.lib import short_date_to_date, Figures, ListofFigures \
     , GofiliateDataException, GofiliateException, GofiliateAuthException \
@@ -14,7 +13,7 @@ from typing import Optional, List, Dict, Iterator
 
 class Gofiliate(object):
     """
-     Base class for Gofiliate information.
+     Base class for Gofiliate.
 
      Handles authentication and base URL retrieval mechanisms.
 
@@ -34,7 +33,7 @@ class Gofiliate(object):
                  , retries: int = 3
                  , timeout: int = 10) -> None:
         """
-        Base class for Gofiliate information.
+        Base class for Gofiliate.
 
         Handles authentication and base URL retrieval mechanisms.
 
@@ -182,7 +181,7 @@ class GofiliateReportBase(object):
         response = self.client.send_request('POST', url, request_object.__dict__)
         return_data = response
         if return_data.get("action", None) == "SUCCESS" and return_data.get("code", None) is True:
-            self.client.logger.warning('Successfully retrieved data.')
+            self.client.logger.info('Successfully retrieved data.')
         else:
             self.client.logger.error("Unable to retrieve data")
             self.client.logger.error(response)
@@ -191,10 +190,11 @@ class GofiliateReportBase(object):
         # First Extract the raw response
         data_node = report_config_enum.value.data_node
         self.report_raw_data = return_data.get(data_node, list())  # type: list
-        self.client.logger.warning('Received {} items'.format(len(self.report_raw_data)))
+        self.client.logger.info('Received {} items'.format(len(self.report_raw_data)))
 
+    # noinspection PyTypeChecker
     @property
-    def report_data(self) -> Iterator[object]:
+    def report_data(self) -> Generator[object, object, object]:
         if len(self.report_raw_data) == 0:
             self.client.logger.warning("No figures were returned from the query, check your query.")
             yield
@@ -208,6 +208,7 @@ class GofiliateReportBase(object):
                     self.client.logger.error('Could not parse a sent figure, will not  be included in list')
                     self.client.logger.error(e.__str__())
                     self.client.logger.error(a_figure)
+                    yield None
 
     @property
     def report_data_dict(self) -> List[Dict]:
@@ -219,6 +220,11 @@ class GofiliateReportBase(object):
 
 
 class BaseWidgetReport(GofiliateReportBase):
+    """
+    Overview report, as seen on the landing page of the Gofiliate dashboard.
+
+    Has extra types, since the data is easier to consume in pivoted form.
+    """
     def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
         request_object = BaseWidgetReportRequest(start_date=start_date
                                                  , end_date=end_date)
@@ -247,7 +253,12 @@ class BaseWidgetReport(GofiliateReportBase):
         return self.report_pivot.to_csv()
 
     @property
-    def report_pivot_objects(self) -> List[BaseWidgetData]:
+    def report_pivot_objects(self) -> Iterator[BaseWidgetData]:
+        """
+        Report pivoted data as a iterator of BaseWidgetData objects.
+
+        One object per period.
+        """
         for an_item in self.report_pivot.itertuples():
             data_dict = dict(
                 date=an_item[0].to_pydatetime().date()
@@ -266,7 +277,12 @@ class BaseWidgetReport(GofiliateReportBase):
             yield data_item
 
     @property
-    def report_pivot_dicts(self) -> List[dict]:
+    def report_pivot_dicts(self) -> Iterator[dict]:
+        """
+        Report pivoted data as a list of dicts, based on the BaseWidgetData class.
+
+        One dict per period.
+        """
         for an_item in self.report_pivot_objects:
             yield an_item.__dict__
 

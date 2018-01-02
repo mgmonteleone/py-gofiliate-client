@@ -236,6 +236,7 @@ class BaseWidgetData(BreakdownData):
         self.period = self.date.isoformat()[0:7]  # type: str
         del self.costs
 
+
 class DailyBreakDownData(BreakdownData):
     def __init__(self, data_dict: dict):
         super().__init__(data_dict)
@@ -261,6 +262,14 @@ class AffiliateNDCSData(object):
 
 
 class ReportConfigurations(Enum):
+    """
+    Used to configure each report available on the gofilliates API.
+
+    In order to easily use the `GofiliateReportBase` class each report endpoint needs to
+    be defined with a definition of the URL, request object (data sent in the POST request),
+    the data object used to store the resulting data, and the data node, which is the property
+    in the resulting JSON which holds the result data.
+    """
     BASE_WIDGET = ReportConfig("{base}/admin/widgets/main"
                                , request_obj=BaseWidgetReportRequest
                                , data_obj=Figures
