@@ -8,7 +8,7 @@ from datetime import date
 from pprint import pprint
 from tests.mock import LOGIN_DATA, DECODE_DATA, NOW \
     , EMAIL, USER_ID, USER_NAME, BEARER_TOKEN, LOGIN_FAIL_DATA, DECODE_FAIL_DATA \
-    , DAILY_BREAKDOWN_DATA, MONTHLY_BREAKDOWN_DATA
+    , DAILY_BREAKDOWN_DATA, MONTHLY_BREAKDOWN_DATA, AFFILIATE_EARNINGS_DATA
 from gofiliate.lib import ReportConfigurations
 from types import GeneratorType
 
@@ -68,6 +68,20 @@ def monthly_breakdown():
     client = gofiliate.Gofiliate(username=LOGIN, password=PASSWORD, host=URL)
     output = gofiliate.MonthlyBreakdownReport(gofiliate_client=client, start_date=START_DATE, end_date=END_DATE)
     return output
+
+
+@pytest.fixture()
+@responses.activate
+def affiliates_earnings():
+    responses.add(responses.POST, 'https://{}/admin/login'.format(URL),
+                  json=LOGIN_DATA, status=200)
+    responses.add(responses.POST, 'https://' + ReportConfigurations.AFFILIATE_EARNINGS.value.url.format(base=URL)
+                  , json=AFFILIATE_EARNINGS_DATA, status=200)
+    client = gofiliate.Gofiliate(username=LOGIN, password=PASSWORD, host=URL)
+    output = gofiliate.AffiliateEarningsReport(gofiliate_client=client, start_date=START_DATE, end_date=END_DATE)
+    return output
+
+
 
 
 @responses.activate
@@ -170,6 +184,26 @@ def test_monthly_breakdown_counts(monthly_breakdown: gofiliate.MonthlyBreakdownR
     logger.info('Dict Count {}'.format(dict_count))
     assert raw_count == data_count == dict_count
 
+
+@responses.activate
+def test_earnings_types(affiliates_earnings: gofiliate.AffiliateEarningsReport):
+    assert type(affiliates_earnings.report_data) == GeneratorType
+    for item in affiliates_earnings.report_data:
+        assert type(item) == gofiliate.lib.AffiliateEarningsData
+
+
+@responses.activate
+def test_earnings_counts(affiliates_earnings: gofiliate.AffiliateEarningsReport):
+    """
+    Test to ensure that the number of elements in all three data lists are the same.
+    """
+    raw_count = len(affiliates_earnings.report_raw_data)
+    data_count = len(affiliates_earnings.report_raw_data)
+    dict_count = sum(1 for w in affiliates_earnings.report_data_dict)
+    logger.info('Data Count {}'.format(data_count))
+    logger.info('Raw Count {}'.format(raw_count))
+    logger.info('Dict Count {}'.format(dict_count))
+    assert raw_count == data_count == dict_count
 
 # FAIL TESTS
 

@@ -305,3 +305,10 @@ class MonthlyBreakdownReport(GofiliateReportBase):
     def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
         request_object = StandardRequest(start_date=start_date, end_date=end_date)
         super().__init__(gofiliate_client, ReportConfigurations.MONTHLY_BREAKDOWN, request_object)
+
+
+class AffiliateEarningsReport(GofiliateReportBase):
+    def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
+        request_object = StandardRequest(start_date=start_date,end_date=end_date)
+        super().__init__(gofiliate_client, ReportConfigurations.AFFILIATE_EARNINGS, request_object)
+
