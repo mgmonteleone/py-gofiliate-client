@@ -22,7 +22,7 @@ DECODE_DATA = {"code": True
 DECODE_FAIL_DATA = {"code": True, "action": "SUCCESS", "stats": False}
 
 AFFILIATE_DETAILS_DATA = {
-    "code": False,
+    "code": True,
     "action": "SUCCESS",
     "stats": [
         {
