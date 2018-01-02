@@ -10,8 +10,6 @@ from gofiliate.lib import short_date_to_date, Figures, ListofFigures \
 import pandas
 from typing import Optional, List, Dict, Iterator
 
-from pprint import pprint
-
 
 class Gofiliate(object):
     """
@@ -226,6 +224,7 @@ class BaseWidgetReport(GofiliateReportBase):
 
     Has extra types, since the data is easier to consume in pivoted form.
     """
+
     def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
         request_object = BaseWidgetReportRequest(start_date=start_date
                                                  , end_date=end_date)
@@ -310,7 +309,7 @@ class MonthlyBreakdownReport(GofiliateReportBase):
 
 class AffiliateEarningsReport(GofiliateReportBase):
     def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
-        request_object = StandardRequest(start_date=start_date,end_date=end_date)
+        request_object = StandardRequest(start_date=start_date, end_date=end_date)
         super().__init__(gofiliate_client, ReportConfigurations.AFFILIATE_EARNINGS, request_object)
 
 
@@ -321,3 +320,7 @@ class AffiliateDetailReport(GofiliateReportBase):
         super().__init__(gofiliate_client, ReportConfigurations.AFFILIATE_DETAILS, request_object)
 
 
+class AffiliateNDCSReport(GofiliateReportBase):
+    def __init__(self, gofiliate_client: Gofiliate, start_date: date, end_date: date):
+        request_object = StandardRequest(start_date=start_date, end_date=end_date)
+        super().__init__(gofiliate_client, ReportConfigurations.AFFILIATE_NDCS, request_object)

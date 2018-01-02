@@ -8,7 +8,8 @@ from datetime import date
 from pprint import pprint
 from tests.mock import LOGIN_DATA, DECODE_DATA, NOW \
     , EMAIL, USER_ID, USER_NAME, BEARER_TOKEN, LOGIN_FAIL_DATA, DECODE_FAIL_DATA \
-    , DAILY_BREAKDOWN_DATA, MONTHLY_BREAKDOWN_DATA, AFFILIATE_EARNINGS_DATA, AFFILIATE_DETAILS_DATA
+    , DAILY_BREAKDOWN_DATA, MONTHLY_BREAKDOWN_DATA, AFFILIATE_EARNINGS_DATA, AFFILIATE_DETAILS_DATA \
+    , AFFILIATE_NDCS_DATA
 from gofiliate.lib import ReportConfigurations
 from types import GeneratorType
 
@@ -93,6 +94,20 @@ def affiliates_details():
     output = gofiliate.AffiliateDetailReport(gofiliate_client=client
                                              , start_date=START_DATE
                                              , status=gofiliate.lib.AffiliateStatuses.ALLOWED)
+    return output
+
+
+@pytest.fixture()
+@responses.activate
+def affiliates_ndcs():
+    responses.add(responses.POST, 'https://{}/admin/login'.format(URL),
+                  json=LOGIN_DATA, status=200)
+    responses.add(responses.POST, 'https://' + ReportConfigurations.AFFILIATE_NDCS.value.url.format(base=URL)
+                  , json=AFFILIATE_NDCS_DATA, status=200)
+    client = gofiliate.Gofiliate(username=LOGIN, password=PASSWORD, host=URL)
+    output = gofiliate.AffiliateNDCSReport(gofiliate_client=client
+                                           , start_date=START_DATE
+                                           , end_date=END_DATE)
     return output
 
 
@@ -245,6 +260,32 @@ def test_aff_details_counts(affiliates_details: gofiliate.AffiliateDetailReport)
     logger.info('Raw Count {}'.format(raw_count))
     logger.info('Dict Count {}'.format(dict_count))
     assert raw_count == data_count == dict_count
+
+
+#affiliates_ndcs
+@responses.activate
+def test_aff_ndcs_types(affiliates_ndcs: gofiliate.AffiliateNDCSReport):
+    assert type(affiliates_ndcs.report_data) == GeneratorType
+    for item in affiliates_ndcs.report_data:
+        assert type(item) == gofiliate.lib.AffiliateNDCSData
+
+
+@responses.activate
+def test_aff_ndcs_counts(affiliates_ndcs: gofiliate.AffiliateNDCSReport):
+    """
+    Test to ensure that the number of elements in all three data lists are the same.
+    """
+    raw_count = len(affiliates_ndcs.report_raw_data)
+    data_count = len(affiliates_ndcs.report_raw_data)
+    dict_count = sum(1 for w in affiliates_ndcs.report_data_dict)
+    if raw_count == 0:
+        pytest.fail('No data at all was returned!')
+    logger.info('Data Count {}'.format(data_count))
+    logger.info('Raw Count {}'.format(raw_count))
+    logger.info('Dict Count {}'.format(dict_count))
+    assert raw_count == data_count == dict_count
+
+
 
 # FAIL TESTS
 
